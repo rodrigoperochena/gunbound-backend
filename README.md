@@ -1,9 +1,3 @@
-### **README.md for Gunbound Thor's Hammer Backend**
-
-Here’s a detailed **README.md** tailored for your Gunbound Thor's Hammer project backend:
-
----
-
 # **Gunbound Thor's Hammer - Backend**
 
 The **Gunbound Thor's Hammer** backend is a modernized Node.js REST API that replaces outdated PHP scripts, improving security, performance, and maintainability for the beloved nostalgic game. This backend handles user registration, login records, and player data, while maintaining compatibility with the legacy MySQL database (`v5.1.36`).
@@ -124,11 +118,7 @@ The server will start on `http://localhost:5000`.
 
 ---
 
-I'm glad you liked it! 🎉 Let's refine the **Future Plans** section based on your notes and make it both a clear roadmap and a helpful **to-do list** for the backend! Here’s the modified version:
-
----
-
-## **Future Plans (Backend Roadmap)**
+## **Future Plans**
 
 - **Frontend User Authentication (via API)**:
   - Implement secure **user authentication endpoints** for frontend logins.
