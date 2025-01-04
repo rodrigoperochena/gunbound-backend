@@ -157,7 +157,7 @@ const registerUser = async (req, res) => {
                               }
 
                               connection.release();
-                              res.status(201).json({ message: 'User registered successfully' });
+                              res.status(201).json({ success: true });
                             });
                           }
                         )
@@ -177,38 +177,61 @@ const registerUser = async (req, res) => {
 };
 
 // Check users logins
-const checkLastSeenUsers = (req, res) => {
-  // Example: Fetch active sessions from memory (or database in a real-world case)
-  // Assuming a simple in-memory session tracking for demonstration
+const lastSeenUsers = (req, res) => {
+  const serverPortNames = {
+    8360: 'Avatar On',
+    8361: 'Avatar Off',
+  };
+
+  // Determine the time filter
+  const { days } = req.query;
+
+  // Default to 7 days if no parameter is provided
+  const interval = parseInt(days, 10) || 1; // Default to 7 days if 'days' is not provided or invalid
+
+  // Validate the input to ensure it's a valid number
+  if (isNaN(interval) || interval <= 0) {
+    return res.status(400).json({ message: 'Invalid timeframe provided. It must be a positive number.' });
+  }
+
+  // Query to fetch last seen users
   pool.query(
-    `SELECT Id, ServerPort, Time
-    FROM loginlog AS t1
-    WHERE Time = (
-      SELECT MAX(Time)
-      FROM loginlog AS t2
-      WHERE t1.Id = t2.Id AND t2.Time > NOW() - INTERVAL 168 HOUR
-    ) ORDER BY Time DESC`,
+    `SELECT 
+      l.Id AS userId,
+      MAX(l.Time) AS lastLoginTime,
+      l.ServerPort AS serverPort,
+      g.TotalGrade AS totalGrade
+    FROM loginlog l
+    LEFT JOIN game g ON l.Id = g.Id
+    WHERE l.Time >= NOW() - INTERVAL ? DAY
+    GROUP BY l.Id
+    ORDER BY lastLoginTime DESC`,
+    [interval],
     (err, results) => {
       if (err) {
-        console.error('Database error:', err); // Log the error
+        console.error('Database error:', err);
         return res.status(500).json({ message: 'Database error', error: err });
       }
 
-      // Format the results
+      if (results.length === 0) {
+        return res.status(200).json({ lastSeenUsers: [] }); // Return an empty array with 200 OK
+      }      
+
+      // Format results for the response
       const formattedResults = results.map((user) => ({
-        id: user.Id,
-        serverPort: user.ServerPort,
-        lastLoginTime: new Date(user.Time).toISOString(), // Convert to ISO format
+        id: user.userId,
+        totalGrade: user.totalGrade,
+        serverPort: serverPortNames[user.serverPort],
+        lastLoginTime: new Date(user.lastLoginTime).toISOString(),
       }));
 
-      // console.log('Online users from DB:', results); // Log the results
       res.status(200).json({ lastSeenUsers: formattedResults });
     }
   );
 };
 
-// Fetch all user details
-const getUserDetails = (req, res) => {
+// Fetch all users
+const getUsers = (req, res) => {
   const { id } = req.params; // Dynamic user ID from request params
   // Country mapping to emoji
   const countryMap = {
@@ -223,25 +246,25 @@ const getUserDetails = (req, res) => {
   const formatMoney = (amount) =>
     new Intl.NumberFormat('en-US', { 
       style: 'currency', 
-      currency: 'USD' 
+      currency: 'USD',
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0  
     }).format(amount);
   
   pool.query(
     `SELECT 
-      u.Id AS userId,
+      g.Id AS userId,
       g.TotalGrade AS totalGrade,
+      g.TotalScore AS totalScore,
       g.Money AS money,
       g.Country AS countryId,
       c.Cash AS cash,
       l.Time AS lastLoginTime
-    FROM user u
-    LEFT JOIN cash c ON u.Id = c.ID
-    LEFT JOIN game g ON u.Id = g.Id
-    LEFT JOIN loginlog l ON u.Id = l.Id
-    WHERE u.Id = ?
-    ORDER BY l.Time DESC
-    LIMIT 1`,
-    [id], // Use the 'id' from the URL
+    FROM game g
+    LEFT JOIN cash c ON g.Id = c.ID
+    LEFT JOIN loginlog l ON g.Id = l.Id
+    GROUP BY g.Id
+    ORDER BY g.TotalScore DESC`,
     (err, results) => {
       if (err) {
         console.error('Database error:', err);
@@ -253,19 +276,81 @@ const getUserDetails = (req, res) => {
       }
 
       // Map and format result
-      const user = results[0];
-      const response = {
+      const response = results.map((user) => ({
         userId: user.userId,
         totalGrade: user.totalGrade,
+        totalScore: user.totalScore,
         money: formatMoney(user.money),
         country: countryMap[user.countryId] || 'Unknown',
         cash: formatMoney(user.cash || 0), // Handle null cash gracefully
         lastLoginTime: user.lastLoginTime,
-      };
-
-      res.status(200).json({ user: response }); // Send back the first result (user details)
+      }));
+      console.log(results)
+      res.status(200).json({ users: response }); // Send back the first result (user details)
     }
   );
 };
 
-module.exports = { registerUser, checkLastSeenUsers, getUserDetails };
+const getUserById = (req, res) => {
+  const { id } = req.params;
+
+  const countryMap = {
+    157: 'Peru',
+    91: 'Indonesia',
+    9: 'Argentina',
+    28: 'Brasil',
+    207: 'USA',
+  };
+
+  const formatMoney = (amount) =>
+    new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0, 
+      maximumFractionDigits: 0 
+    }).format(amount);
+
+  pool.query(
+    `SELECT 
+      g.Id AS userId,
+      g.TotalGrade AS totalGrade,
+      g.TotalScore AS totalScore,
+      g.Money AS money,
+      g.Country AS countryId,
+      g.AccumShot AS winRate,
+      c.Cash AS cash,
+      MAX(l.Time) AS lastLoginTime
+    FROM game g
+    LEFT JOIN cash c ON g.Id = c.ID
+    LEFT JOIN loginlog l ON g.Id = l.Id
+    WHERE g.Id = ?
+    GROUP BY g.Id`,
+    [id],
+    (err, results) => {
+      if (err) {
+        console.error('Database error:', err);
+        return res.status(500).json({ message: 'Database error', error: err });
+      }
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      const user = results[0];
+      const response = {
+        userId: user.userId,
+        totalGrade: user.totalGrade,
+        totalScore: user.totalScore,
+        money: formatMoney(user.money),
+        country: countryMap[user.countryId] || 'Unknown',
+        winRate: user.winRate,
+        cash: formatMoney(user.cash || 0),
+        lastLoginTime: user.lastLoginTime,
+      };
+
+      res.status(200).json({ user: response });
+    }
+  );
+};
+
+module.exports = { registerUser, lastSeenUsers, getUsers, getUserById };
