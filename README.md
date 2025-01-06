@@ -31,7 +31,6 @@ The project aims to:
 ## **Features**
 - **User Registration:** Securely register new players and assign default attributes.
 - **Player Data:** View player stats, game points (GP), and recent login activity.
-- **Session Handling:** Uses `express-session` to manage sessions.
 - **Cross-Origin Resource Sharing (CORS):** Supports multiple origins for frontend communication.
 - **Input Validation:** Ensures robust form data validation to prevent injections.
 
@@ -78,10 +77,8 @@ DB_HOST=yourdbhost
 DB_USER=yourdbuser
 DB_PASSWORD=yourpassword
 DB_NAME=gunbound
-SESSION_SECRET=supersecretkey
 ADMIN_REGISTRATION_TOKEN=admintoken
 ```
-- `SESSION_SECRET`: Secret key for securing user sessions.
 - `ADMIN_REGISTRATION_TOKEN`: Optional admin token for special privileges during registration.
 
 ---
@@ -112,8 +109,6 @@ The server will start on `http://localhost:5000`.
 - **MySQL 5.1.36:** Legacy MySQL database for compatibility with the original game server.
 - **mysql2:** Handles database queries and connection pooling.
 - **dotenv:** Manages environment variables securely.
-- **bcrypt:** Password hashing (future plans).
-- **express-session:** Manages session data for persistent login sessions.
 - **CORS:** Enables cross-origin requests from the frontend.
 
 ---
@@ -122,8 +117,8 @@ The server will start on `http://localhost:5000`.
 
 - **Frontend User Authentication (via API)**:
   - Implement secure **user authentication endpoints** for frontend logins.
-  - **Password Hashing:** Use `bcrypt` to hash and validate passwords for user accounts created via the frontend.
-  - **Session-Based Login:** Continue using `express-session` for session management.
+  - **Password Hashing:** Use `bcrypt` to securely hash and validate passwords for website user account registration, as the legacy game database does not support hashed passwords.  
+  - **Session-Based Login:** Manage user sessions with `express-session` to enable persistent logins and maintain authentication across API requests.  
   - **Persistent Login Sessions:** Enable automatic session renewal to avoid frequent logouts.
 
 - **Separation of Game Accounts and Web User Accounts:**
@@ -162,10 +157,10 @@ The server will start on `http://localhost:5000`.
 
 ### **To-Do Checklist**:
 
-#### **Authentication & Accounts:**
-- [ ] Implement password hashing with `bcrypt`.
-- [ ] Add login/logout endpoints for session-based user authentication.
-- [ ] Create API endpoint for linking game accounts to frontend accounts.
+#### **Authentication & Accounts:**  
+- [ ] Implement password hashing with `bcrypt` for secure website user account registration, as the game’s legacy database does not support hashed passwords.  
+- [ ] Add login/logout endpoints for session-based user authentication using `express-session` to maintain persistent sessions across API requests.  
+- [ ] Create an API endpoint to allow users to link their game server accounts to their website accounts for a unified experience.  
 
 #### **Admin Dashboard Features:**
 - [ ] Add endpoint for viewing global player stats (`/api/admin/stats`).
