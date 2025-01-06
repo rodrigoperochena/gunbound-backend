@@ -74,10 +74,10 @@ npm install
 Create a `.env` file in the root folder:
 ```env
 PORT=5000
-DB_HOST=localhost
-DB_USER=root
+DB_HOST=yourdbhost
+DB_USER=yourdbuser
 DB_PASSWORD=yourpassword
-DB_NAME=gunbound_db
+DB_NAME=gunbound
 SESSION_SECRET=supersecretkey
 ADMIN_REGISTRATION_TOKEN=admintoken
 ```
@@ -161,7 +161,6 @@ The server will start on `http://localhost:5000`.
 ---
 
 ### **To-Do Checklist**:
-Here's a handy **checklist** to help track progress:
 
 #### **Authentication & Accounts:**
 - [ ] Implement password hashing with `bcrypt`.
