@@ -285,7 +285,7 @@ const getUsers = (req, res) => {
         cash: formatMoney(user.cash || 0), // Handle null cash gracefully
         lastLoginTime: user.lastLoginTime,
       }));
-      console.log(results)
+      // console.log(results)
       res.status(200).json({ users: response }); // Send back the first result (user details)
     }
   );
